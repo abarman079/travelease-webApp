@@ -48,14 +48,14 @@ require_once ROOT_PATH . '/includes/navbar.php';
 
                 <?php if (!$isValidToken): ?>
                     <div class="alert alert-warning border-0 rounded-4 mb-4">
-                        This password reset link is invalid, expired, or already used.
+                        This password reset link is invalid, expired, or already used. Please use the newest link or request another one.
                     </div>
                     <p class="mb-0 auth-note">
                         <a href="<?= BASE_URL; ?>/forgot-password.php">Request a new reset link</a>
                     </p>
                 <?php else: ?>
                     <p class="mb-4">
-                        Enter your new password below. Make sure both fields match.
+                        Enter your new password below.
                     </p>
 
                     <form method="POST" action="<?= BASE_URL; ?>/auth/reset-password-handler.php" class="row g-3">

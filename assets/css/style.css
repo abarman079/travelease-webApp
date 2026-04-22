@@ -1066,3 +1066,34 @@ a {
         border-radius: 18px;
     }
 }
+
+
+/* ===== EMAIL + CANCELLATION POLISH ===== */
+
+.booking-status.confirmed {
+    color: #2d7a46;
+}
+
+.booking-status.pending {
+    color: #b19057;
+}
+
+.booking-status.cancelled {
+    color: #b42318;
+}
+
+.cancel-chip {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: 0.55rem 0.85rem;
+    background: rgba(180, 35, 24, 0.08);
+    border: 1px solid rgba(180, 35, 24, 0.18);
+    color: #b42318;
+    font-size: 0.86rem;
+    font-weight: 700;
+}
+
+.booking-cancel-btn {
+    min-width: 150px;
+}

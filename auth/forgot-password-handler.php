@@ -2,6 +2,7 @@
 require_once dirname(__DIR__) . '/config/config.php';
 require_once ROOT_PATH . '/config/db.php';
 require_once ROOT_PATH . '/includes/auth.php';
+require_once ROOT_PATH . '/includes/mailer.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     redirectTo('/forgot-password.php');
@@ -19,7 +20,7 @@ $phoneDigits = preg_replace('/\D+/', '', $identifier);
 
 try {
     $stmt = $pdo->prepare("
-        SELECT user_id, email, username, phone
+        SELECT user_id, email, username, full_name
         FROM users
         WHERE 
             email = :identifier
@@ -57,7 +58,18 @@ try {
             'expires_at' => $expiresAt
         ]);
 
-        $_SESSION['dev_reset_link'] = BASE_URL . '/reset-password.php?token=' . urlencode($token);
+        $resetLink = appBaseUrl() . '/reset-password.php?token=' . urlencode($token);
+        $displayName = $user['full_name'] ?: $user['username'] ?: 'Traveler';
+
+        if (defined('APP_ENV') && APP_ENV === 'local') {
+            $_SESSION['dev_reset_link'] = $resetLink;
+        }
+
+        $mailSent = sendForgotPasswordEmail($user['email'], $displayName, $resetLink);
+
+        if (defined('APP_ENV') && APP_ENV === 'local' && !$mailSent) {
+            setFlash('error', 'Reset link was generated, but email sending failed. Use the local preview link below.');
+        }
     }
 
     setFlash('success', 'If an account matches your details, a reset link has been generated.');

@@ -2,6 +2,7 @@
 require_once dirname(__DIR__) . '/config/config.php';
 require_once ROOT_PATH . '/config/db.php';
 require_once ROOT_PATH . '/includes/auth.php';
+require_once ROOT_PATH . '/includes/mailer.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     redirectTo('/register.php');
@@ -107,6 +108,8 @@ try {
         'country_code' => $countryCode,
         'password_hash' => $passwordHash
     ]);
+
+    sendRegistrationEmails($pdo, $email, $fullName, $username);
 
     setFlash('success', 'Account created successfully. Please log in.');
     redirectTo('/login.php');

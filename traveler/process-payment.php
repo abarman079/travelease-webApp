@@ -2,6 +2,7 @@
 require_once dirname(__DIR__) . '/config/config.php';
 require_once ROOT_PATH . '/config/db.php';
 require_once ROOT_PATH . '/includes/auth.php';
+require_once ROOT_PATH . '/includes/mailer.php';
 
 requireRole(['traveler']);
 $user = currentUser();
@@ -13,20 +14,46 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 $bookingId = (int) ($_POST['booking_id'] ?? 0);
 $paymentMethod = trim($_POST['payment_method'] ?? '');
-$mockAccount = trim($_POST['mock_account'] ?? '');
-$securityCode = trim($_POST['security_code'] ?? '');
+$accountNumber = preg_replace('/\D+/', '', $_POST['account_number'] ?? '');
+$cvv = preg_replace('/\D+/', '', $_POST['cvv'] ?? '');
 
-if ($bookingId <= 0 || $paymentMethod === '' || $mockAccount === '' || $securityCode === '') {
+$allowedMethods = ['Credit Card', 'Debit Card', 'Bank Transfer', 'Digital Wallet'];
+
+if ($bookingId <= 0 || !in_array($paymentMethod, $allowedMethods, true)) {
     setFlash('error', 'Please complete all payment fields.');
+    header('Location: ' . BASE_URL . '/traveler/payment.php?booking_id=' . $bookingId);
+    exit;
+}
+
+if (!preg_match('/^\d{12,16}$/', $accountNumber)) {
+    setFlash('error', 'Account number must contain only digits and be no more than 16 digits.');
+    header('Location: ' . BASE_URL . '/traveler/payment.php?booking_id=' . $bookingId);
+    exit;
+}
+
+if (!preg_match('/^\d{3,4}$/', $cvv)) {
+    setFlash('error', 'CVV must be 3 or 4 digits.');
     header('Location: ' . BASE_URL . '/traveler/payment.php?booking_id=' . $bookingId);
     exit;
 }
 
 try {
     $bookingStmt = $pdo->prepare("
-        SELECT booking_id, user_id, total_amount, booking_status
-        FROM bookings
-        WHERE booking_id = :booking_id AND user_id = :user_id
+        SELECT 
+            b.booking_id,
+            b.user_id,
+            b.total_amount,
+            b.booking_status,
+            b.travel_date,
+            t.trip_id,
+            t.title,
+            t.destination,
+            u.email AS traveler_email,
+            u.full_name AS traveler_name
+        FROM bookings b
+        INNER JOIN trips t ON b.trip_id = t.trip_id
+        INNER JOIN users u ON b.user_id = u.user_id
+        WHERE b.booking_id = :booking_id AND b.user_id = :user_id
         LIMIT 1
     ");
     $bookingStmt->execute([
@@ -37,6 +64,12 @@ try {
 
     if (!$booking) {
         setFlash('error', 'Booking not found.');
+        header('Location: ' . BASE_URL . '/traveler/my-bookings.php');
+        exit;
+    }
+
+    if ($booking['booking_status'] === 'cancelled') {
+        setFlash('error', 'Cancelled bookings cannot be paid.');
         header('Location: ' . BASE_URL . '/traveler/my-bookings.php');
         exit;
     }
@@ -107,6 +140,17 @@ try {
     ]);
 
     $pdo->commit();
+
+    $agentEmail = getTripAgentEmail($pdo, (int) $booking['trip_id']);
+    sendTripConfirmedEmails($pdo, [
+        'traveler_email' => $booking['traveler_email'],
+        'traveler_name' => $booking['traveler_name'],
+        'trip_title' => $booking['title'],
+        'destination' => $booking['destination'],
+        'booking_id' => $bookingId,
+        'travel_date' => $booking['travel_date'],
+        'agent_email' => $agentEmail
+    ]);
 
     setFlash('success', 'Mock payment completed successfully. Your booking is now confirmed.');
     header('Location: ' . BASE_URL . '/traveler/my-bookings.php');

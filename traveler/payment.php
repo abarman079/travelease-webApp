@@ -85,13 +85,33 @@ require_once ROOT_PATH . '/includes/navbar.php';
                         </div>
 
                         <div class="col-md-8">
-                            <label for="mock_account" class="form-label auth-label">Card / Account Reference</label>
-                            <input type="text" class="form-control auth-input" id="mock_account" name="mock_account" placeholder="e.g. 4242 4242 4242 4242" required>
+                            <label for="account_number" class="form-label auth-label">Account Number</label>
+                            <input
+                                type="text"
+                                class="form-control auth-input"
+                                id="account_number"
+                                name="account_number"
+                                maxlength="16"
+                                inputmode="numeric"
+                                pattern="\d{12,16}"
+                                placeholder="1234567812345678"
+                                required
+                            >
                         </div>
 
                         <div class="col-md-4">
-                            <label for="security_code" class="form-label auth-label">Security Code</label>
-                            <input type="text" class="form-control auth-input" id="security_code" name="security_code" placeholder="123" required>
+                            <label for="cvv" class="form-label auth-label">CVV</label>
+                            <input
+                                type="text"
+                                class="form-control auth-input"
+                                id="cvv"
+                                name="cvv"
+                                maxlength="4"
+                                inputmode="numeric"
+                                pattern="\d{3,4}"
+                                placeholder="123"
+                                required
+                            >
                         </div>
 
                         <div class="col-12 d-grid mt-3">
@@ -142,3 +162,7 @@ require_once ROOT_PATH . '/includes/navbar.php';
 </div>
 
 <?php require_once ROOT_PATH . '/includes/footer.php'; ?>
+
+
+
+

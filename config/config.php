@@ -14,13 +14,4 @@ $isLocal =
 
 define('APP_ENV', $isLocal ? 'local' : 'production');
 
-/*
-|--------------------------------------------------------------------------
-| BASE_URL
-|--------------------------------------------------------------------------
-| Local: project runs at http://localhost/travelease
-| Live: if uploaded to web root, keep BASE_URL as ''
-| If uploaded to a subfolder on live hosting, change '' to '/foldername'
-|--------------------------------------------------------------------------
-*/
 define('BASE_URL', $isLocal ? '/travelease' : '');

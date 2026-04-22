@@ -11,8 +11,13 @@ $token = trim($_POST['token'] ?? '');
 $password = $_POST['password'] ?? '';
 $confirmPassword = $_POST['confirm_password'] ?? '';
 
-if ($token === '' || $password === '' || $confirmPassword === '') {
-    setFlash('error', 'Please fill in all password reset fields.');
+if ($token === '') {
+    setFlash('error', 'Reset token is missing. Please use the latest reset link from your email.');
+    redirectTo('/forgot-password.php');
+}
+
+if ($password === '' || $confirmPassword === '') {
+    setFlash('error', 'Please fill in both password fields.');
     header('Location: ' . BASE_URL . '/reset-password.php?token=' . urlencode($token));
     exit;
 }
@@ -41,9 +46,22 @@ try {
     $stmt->execute(['token_hash' => $tokenHash]);
     $resetRow = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    if (!$resetRow || $resetRow['used_at'] !== null || strtotime($resetRow['expires_at']) <= time()) {
-        setFlash('error', 'This password reset link is invalid, expired, or already used.');
-        redirectTo('/forgot-password.php');
+    if (!$resetRow) {
+        setFlash('error', 'This reset link was not found. Please use the newest link.');
+        header('Location: ' . BASE_URL . '/reset-password.php?token=' . urlencode($token));
+        exit;
+    }
+
+    if ($resetRow['used_at'] !== null) {
+        setFlash('error', 'This reset link has already been used. Please request a new one.');
+        header('Location: ' . BASE_URL . '/reset-password.php?token=' . urlencode($token));
+        exit;
+    }
+
+    if (strtotime($resetRow['expires_at']) <= time()) {
+        setFlash('error', 'This reset link has expired. Please request a new one.');
+        header('Location: ' . BASE_URL . '/reset-password.php?token=' . urlencode($token));
+        exit;
     }
 
     $newHash = password_hash($password, PASSWORD_DEFAULT);
@@ -60,22 +78,25 @@ try {
         'user_id' => $resetRow['user_id']
     ]);
 
-    $markUsed = $pdo->prepare("
+    $markCurrentUsed = $pdo->prepare("
         UPDATE password_resets
         SET used_at = NOW()
         WHERE reset_id = :reset_id
     ");
-    $markUsed->execute([
+    $markCurrentUsed->execute([
         'reset_id' => $resetRow['reset_id']
     ]);
 
-    $expireOthers = $pdo->prepare("
+    $markOthersUsed = $pdo->prepare("
         UPDATE password_resets
         SET used_at = NOW()
-        WHERE user_id = :user_id AND used_at IS NULL
+        WHERE user_id = :user_id
+          AND reset_id <> :reset_id
+          AND used_at IS NULL
     ");
-    $expireOthers->execute([
-        'user_id' => $resetRow['user_id']
+    $markOthersUsed->execute([
+        'user_id' => $resetRow['user_id'],
+        'reset_id' => $resetRow['reset_id']
     ]);
 
     $pdo->commit();
@@ -88,5 +109,6 @@ try {
     }
 
     setFlash('error', 'Something went wrong while resetting your password.');
-    redirectTo('/forgot-password.php');
+    header('Location: ' . BASE_URL . '/reset-password.php?token=' . urlencode($token));
+    exit;
 }

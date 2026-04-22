@@ -40,7 +40,7 @@ require_once ROOT_PATH . '/includes/navbar.php';
         <div class="section-kicker mb-2">Traveler records</div>
         <h1 class="mb-3">My Bookings</h1>
         <p class="mb-0">
-            Review your saved travel bookings and payment progress below.
+            Review your saved travel bookings, payment progress, and trip planning options below.
         </p>
     </div>
 
@@ -80,7 +80,9 @@ require_once ROOT_PATH . '/includes/navbar.php';
                                     </div>
                                     <div>
                                         <span class="booking-small-label">Booking Status</span>
-                                        <strong class="booking-status"><?= htmlspecialchars(ucfirst($booking['booking_status'])); ?></strong>
+                                        <strong class="booking-status <?= htmlspecialchars($booking['booking_status']); ?>">
+                                            <?= htmlspecialchars(ucfirst($booking['booking_status'])); ?>
+                                        </strong>
                                     </div>
                                     <div>
                                         <span class="booking-small-label">Payment Status</span>
@@ -99,16 +101,26 @@ require_once ROOT_PATH . '/includes/navbar.php';
                                 <div class="booking-id-text mb-2">Booking #<?= (int) $booking['booking_id']; ?></div>
                                 <div class="booking-date-text mb-3">Created: <?= htmlspecialchars($booking['booked_at']); ?></div>
 
-                                <?php if (($booking['payment_status'] ?? '') !== 'paid'): ?>
-                                    <a href="<?= BASE_URL; ?>/traveler/payment.php?booking_id=<?= (int) $booking['booking_id']; ?>" class="btn btn-dark-soft btn-sm">
-                                        Pay Now
-                                    </a>
+                                <?php if ($booking['booking_status'] === 'cancelled'): ?>
+                                    <span class="cancel-chip">Booking Cancelled</span>
                                 <?php else: ?>
                                     <div class="d-flex flex-column gap-2 align-items-lg-end">
-                                        <span class="dashboard-note">Payment Complete</span>
-                                        <a href="<?= BASE_URL; ?>/traveler/itinerary.php?booking_id=<?= (int) $booking['booking_id']; ?>" class="btn btn-card btn-sm">
-                                            Plan Trip
-                                        </a>
+                                        <?php if (($booking['payment_status'] ?? '') !== 'paid'): ?>
+                                            <a href="<?= BASE_URL; ?>/traveler/payment.php?booking_id=<?= (int) $booking['booking_id']; ?>" class="btn btn-dark-soft btn-sm">
+                                                Pay Now
+                                            </a>
+                                        <?php else: ?>
+                                            <a href="<?= BASE_URL; ?>/traveler/itinerary.php?booking_id=<?= (int) $booking['booking_id']; ?>" class="btn btn-card btn-sm">
+                                                Plan Trip
+                                            </a>
+                                        <?php endif; ?>
+
+                                        <form method="POST" action="<?= BASE_URL; ?>/traveler/cancel-booking.php" onsubmit="return confirm('Are you sure you want to cancel this booking?');">
+                                            <input type="hidden" name="booking_id" value="<?= (int) $booking['booking_id']; ?>">
+                                            <button type="submit" class="btn btn-outline-danger btn-sm booking-cancel-btn">
+                                                Cancel Booking
+                                            </button>
+                                        </form>
                                     </div>
                                 <?php endif; ?>
                             </div>

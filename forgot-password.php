@@ -7,6 +7,9 @@ $error = getFlash('error');
 $previewLink = $_SESSION['dev_reset_link'] ?? null;
 unset($_SESSION['dev_reset_link']);
 
+$mailDebugError = $_SESSION['mail_debug_error'] ?? null;
+unset($_SESSION['mail_debug_error']);
+
 require_once ROOT_PATH . '/includes/header.php';
 require_once ROOT_PATH . '/includes/navbar.php';
 ?>
@@ -29,6 +32,13 @@ require_once ROOT_PATH . '/includes/navbar.php';
                     <div class="alert alert-success border-0 rounded-4 mb-4"><?= htmlspecialchars($message); ?></div>
                 <?php endif; ?>
 
+                <?php if ($mailDebugError && defined('APP_ENV') && APP_ENV === 'local'): ?>
+                    <div class="alert alert-warning border-0 rounded-4 mb-4">
+                        <strong>Local mail debug:</strong><br>
+                        <?= htmlspecialchars($mailDebugError); ?>
+                    </div>
+                <?php endif; ?>
+
                 <form method="POST" action="<?= BASE_URL; ?>/auth/forgot-password-handler.php" class="row g-3">
                     <div class="col-12">
                         <label for="identifier" class="form-label auth-label">Username, Email, or Phone</label>
@@ -40,12 +50,11 @@ require_once ROOT_PATH . '/includes/navbar.php';
                     </div>
                 </form>
 
-                <?php if ($previewLink): ?>
+                <?php if ($previewLink && defined('APP_ENV') && APP_ENV === 'local'): ?>
                     <div class="dev-preview-box mt-4">
                         <div class="dev-preview-title">Local development reset link</div>
                         <p class="mb-2">
-                            This preview link is shown only for your local/student setup.
-                            Later, this can be replaced with email delivery.
+                            Use this link directly if email is delayed or Gmail SMTP fails.
                         </p>
                         <a href="<?= htmlspecialchars($previewLink); ?>" class="dev-preview-link">
                             Open Reset Password Page
